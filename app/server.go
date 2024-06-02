@@ -57,5 +57,6 @@ func ReadAllLines(reader *bufio.Reader) ([]string, error) {
 			return nil, err
 		}
 		lines = append(lines, string(line))
+		fmt.Println(lines)
 	}
 }
