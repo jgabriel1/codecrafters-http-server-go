@@ -6,7 +6,7 @@ import (
 )
 
 func TestEncodesOkResponseCorrectly(t *testing.T) {
-	res := New(StatusOk, "foo")
+	res := NewText(StatusOk, "foo")
 	encoded := Encode(res)
 	expected := []byte(
 		"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 3\r\n\r\nfoo",
@@ -17,7 +17,7 @@ func TestEncodesOkResponseCorrectly(t *testing.T) {
 }
 
 func TestEncodesNotFoundResponseCorrectly(t *testing.T) {
-	res := New(StatusNotFound, "")
+	res := NewText(StatusNotFound, "")
 	encoded := Encode(res)
 	expected := []byte(
 		"HTTP/1.1 404 Not Found\r\n\r\n",
