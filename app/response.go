@@ -31,8 +31,6 @@ func (res *Response) encode() []byte {
 }
 
 func (res *Response) Write(conn net.Conn) error {
-	encoded := res.encode()
-	fmt.Println(string(encoded))
-	_, err := conn.Write(encoded)
+	_, err := conn.Write(res.encode())
 	return err
 }

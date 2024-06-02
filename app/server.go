@@ -21,8 +21,20 @@ func main() {
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
-	res, _ := NewResponse(strings.TrimLeft(req.Path, "/"))
-	res.Write(conn)
+	matchPath(conn, req.Path)
+}
+
+func matchPath(conn net.Conn, path string) error {
+	splitPath := strings.Split(path, "/")
+	switch splitPath[0] {
+	case "echo":
+		{
+			res, _ := NewResponse(splitPath[1])
+			return res.Write(conn)
+		}
+	default:
+		return nil
+	}
 }
 
 func exitWithMessage(message ...any) {
