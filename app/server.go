@@ -51,6 +51,7 @@ func ReadAllLines(reader *bufio.Reader) ([]string, error) {
 	for {
 		line, _, err := reader.ReadLine()
 		if err != nil {
+			fmt.Println(err, errors.Is(err, io.EOF))
 			if errors.Is(err, io.EOF) {
 				return lines, nil
 			}
