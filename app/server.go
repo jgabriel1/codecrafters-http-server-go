@@ -57,7 +57,6 @@ func handleConnection(conn net.Conn, cfg config.Config) error {
 				_, err := conn.Write(response.Encode(res))
 				return err
 			}
-			fmt.Println("file content: ", string(content))
 			res := response.New(
 				response.StatusOk,
 				response.NewBody(string(content), "application/octet-stream"))
