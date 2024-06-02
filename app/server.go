@@ -16,7 +16,6 @@ func main() {
 		exitWithMessage("Failed to bind to port 4221")
 	}
 	for {
-		fmt.Println("waiting connection")
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
