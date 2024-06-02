@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -23,7 +24,8 @@ func main() {
 		exitWithMessage("Error accepting connection: ", err.Error())
 	}
 	defer conn.Close()
-	lines, err := ReadLines(conn)
+	lines, err := ReadAllLines(bufio.NewReader(conn))
+	fmt.Println(lines)
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
@@ -44,31 +46,16 @@ func exitWithMessage(message ...any) {
 	os.Exit(1)
 }
 
-type Readable interface {
-	Read(b []byte) (n int, err error)
-}
-
-func ReadLines(readable Readable) ([]string, error) {
+func ReadAllLines(reader *bufio.Reader) ([]string, error) {
 	lines := make([]string, 0)
-	buf := make([]byte, 1024)
 	for {
-		bytesRead := 0
-		line := make([]byte, 0)
-		bytesRead, err := readable.Read(buf)
+		line, _, err := reader.ReadLine()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				break
+				return lines, nil
 			}
 			return nil, err
 		}
-	inner:
-		for i := range bytesRead {
-			if buf[i] == '\n' {
-				break inner
-			}
-			line = append(line, buf[i])
-		}
 		lines = append(lines, string(line))
 	}
-	return lines, nil
 }
