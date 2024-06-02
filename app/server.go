@@ -1,16 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"net"
 	"os"
 	"strings"
-)
-
-const (
-	OK_RESPONSE          = "HTTP/1.1 200 OK\r\n\r\n"
-	BAD_REQUEST_RESPONSE = "HTTP/1.1 404 Not Found\r\n\r\n"
 )
 
 func main() {
@@ -23,38 +17,15 @@ func main() {
 		exitWithMessage("Error accepting connection: ", err.Error())
 	}
 	defer conn.Close()
-	lines, err := readAllLines(conn)
+	req, err := NewRequest(conn)
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
-	if len(lines) < 2 {
-		exitWithMessage("Invalid message.")
-	}
-	path := strings.Split(lines[0], " ")[1]
-	switch path {
-	case "/":
-		conn.Write([]byte(OK_RESPONSE))
-	default:
-		conn.Write([]byte(BAD_REQUEST_RESPONSE))
-	}
+	res, _ := NewResponse(strings.TrimLeft(req.Path, "/"))
+	res.Write(conn)
 }
 
 func exitWithMessage(message ...any) {
 	fmt.Println(message...)
 	os.Exit(1)
-}
-
-func readAllLines(c net.Conn) ([]string, error) {
-	reader := bufio.NewReader(c)
-	lines := make([]string, 0)
-	for {
-		line, _, err := reader.ReadLine()
-		if err != nil {
-			return nil, err
-		}
-		if len(line) == 0 { // zero size chunk to stop reading
-			return lines, nil
-		}
-		lines = append(lines, string(line))
-	}
 }
