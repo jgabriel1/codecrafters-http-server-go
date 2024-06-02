@@ -26,10 +26,11 @@ func main() {
 
 func matchPath(conn net.Conn, path string) error {
 	splitPath := strings.Split(path, "/")
-	switch splitPath[0] {
+	fmt.Println(splitPath)
+	switch splitPath[1] {
 	case "echo":
 		{
-			res, _ := NewResponse(splitPath[1])
+			res, _ := NewResponse(splitPath[2])
 			return res.Write(conn)
 		}
 	default:
