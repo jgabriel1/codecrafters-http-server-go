@@ -15,19 +15,23 @@ func main() {
 	if err != nil {
 		exitWithMessage("Failed to bind to port 4221")
 	}
-	conn, err := l.Accept()
-	if err != nil {
-		exitWithMessage("Error accepting connection: ", err.Error())
+	for {
+		fmt.Println("waiting connection")
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			continue
+		}
+		go handleConnection(conn)
 	}
+}
+
+func handleConnection(conn net.Conn) error {
 	defer conn.Close()
 	req, err := request.FromReader(conn)
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
-	matchPath(conn, req)
-}
-
-func matchPath(conn net.Conn, req *request.Request) error {
 	splitPath := strings.Split(req.Path, "/")
 	switch splitPath[1] {
 	case "":
