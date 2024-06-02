@@ -24,15 +24,21 @@ func main() {
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
-	matchPath(conn, req.Path)
+	matchPath(conn, req)
 }
 
-func matchPath(conn net.Conn, path string) error {
-	splitPath := strings.Split(path, "/")
+func matchPath(conn net.Conn, req *request.Request) error {
+	splitPath := strings.Split(req.Path, "/")
 	switch splitPath[1] {
 	case "":
 		{
 			res := response.New(response.StatusOk, "")
+			_, err := conn.Write(response.Encode(res))
+			return err
+		}
+	case "user-agent":
+		{
+			res := response.New(response.StatusOk, req.Headers["user-agent"])
 			_, err := conn.Write(response.Encode(res))
 			return err
 		}
