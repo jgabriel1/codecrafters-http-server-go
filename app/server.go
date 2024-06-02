@@ -30,6 +30,12 @@ func main() {
 func matchPath(conn net.Conn, path string) error {
 	splitPath := strings.Split(path, "/")
 	switch splitPath[1] {
+	case "":
+		{
+			res := response.New(response.StatusOk, "")
+			_, err := conn.Write(response.Encode(res))
+			return err
+		}
 	case "echo":
 		{
 			res := response.New(response.StatusOk, splitPath[2])
