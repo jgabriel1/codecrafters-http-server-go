@@ -1,8 +1,8 @@
-package main
+package request
 
 import (
 	"bufio"
-	"net"
+	"io"
 	"strings"
 )
 
@@ -10,8 +10,8 @@ type Request struct {
 	Path string
 }
 
-func NewRequest(conn net.Conn) (*Request, error) {
-	lines, err := readRequestLines(conn)
+func FromReader(reader io.Reader) (*Request, error) {
+	lines, err := readRequestLines(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -21,11 +21,11 @@ func NewRequest(conn net.Conn) (*Request, error) {
 	}, nil
 }
 
-func readRequestLines(c net.Conn) ([]string, error) {
-	reader := bufio.NewReader(c)
+func readRequestLines(reader io.Reader) ([]string, error) {
+	r := bufio.NewReader(reader)
 	lines := make([]string, 0)
 	for {
-		line, _, err := reader.ReadLine()
+		line, _, err := r.ReadLine()
 		if err != nil {
 			return nil, err
 		}

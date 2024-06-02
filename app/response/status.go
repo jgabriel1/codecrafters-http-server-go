@@ -1,0 +1,19 @@
+package response
+
+type Status uint8
+
+const (
+	StatusOk = iota
+	StatusNotFound
+)
+
+func (s Status) ToEncoded() string {
+	switch s {
+	case StatusOk:
+		return "HTTP/1.1 200 OK"
+	case StatusNotFound:
+		return "HTTP/1.1 404 Not Found"
+	default:
+		return ""
+	}
+}

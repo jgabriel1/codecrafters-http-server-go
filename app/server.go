@@ -5,6 +5,9 @@ import (
 	"net"
 	"os"
 	"strings"
+
+	"github.com/codecrafters-io/http-server-starter-go/app/request"
+	"github.com/codecrafters-io/http-server-starter-go/app/response"
 )
 
 func main() {
@@ -17,7 +20,7 @@ func main() {
 		exitWithMessage("Error accepting connection: ", err.Error())
 	}
 	defer conn.Close()
-	req, err := NewRequest(conn)
+	req, err := request.FromReader(conn)
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
@@ -26,15 +29,19 @@ func main() {
 
 func matchPath(conn net.Conn, path string) error {
 	splitPath := strings.Split(path, "/")
-	fmt.Println(splitPath)
 	switch splitPath[1] {
 	case "echo":
 		{
-			res, _ := NewResponse(splitPath[2])
-			return res.Write(conn)
+			res := response.New(response.StatusOk, splitPath[2])
+			_, err := conn.Write(response.Encode(res))
+			return err
 		}
 	default:
-		return nil
+		{
+			res := response.New(response.StatusNotFound, "")
+			_, err := conn.Write(response.Encode(res))
+			return err
+		}
 	}
 }
 
