@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 )
 
 const (
@@ -25,14 +26,14 @@ func main() {
 	}
 	defer conn.Close()
 	lines, err := ReadAllLines(bufio.NewReader(conn))
-	fmt.Println(lines)
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
 	if len(lines) < 2 {
 		exitWithMessage("Invalid message.")
 	}
-	path := lines[1]
+	path := strings.Split(lines[0], " ")[1]
+	fmt.Println(path)
 	switch path {
 	case "/":
 		conn.Write([]byte(OK_RESPONSE))
@@ -51,13 +52,11 @@ func ReadAllLines(reader *bufio.Reader) ([]string, error) {
 	for {
 		line, _, err := reader.ReadLine()
 		if err != nil {
-			fmt.Println(err, errors.Is(err, io.EOF))
 			if errors.Is(err, io.EOF) {
 				return lines, nil
 			}
 			return nil, err
 		}
 		lines = append(lines, string(line))
-		fmt.Println(lines)
 	}
 }
