@@ -23,7 +23,7 @@ func main() {
 		exitWithMessage("Error accepting connection: ", err.Error())
 	}
 	defer conn.Close()
-	lines, err := ReadAllLines(conn)
+	lines, err := readAllLines(conn)
 	if err != nil {
 		exitWithMessage("Error reading message: ", err.Error())
 	}
@@ -44,7 +44,7 @@ func exitWithMessage(message ...any) {
 	os.Exit(1)
 }
 
-func ReadAllLines(c net.Conn) ([]string, error) {
+func readAllLines(c net.Conn) ([]string, error) {
 	reader := bufio.NewReader(c)
 	lines := make([]string, 0)
 	for {
