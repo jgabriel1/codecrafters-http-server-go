@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net"
 	"os"
@@ -58,10 +57,10 @@ func handleConnection(conn net.Conn, cfg config.Config) error {
 				_, err := conn.Write(response.Encode(res))
 				return err
 			}
-			encodedContent := base64.StdEncoding.EncodeToString(content)
+			fmt.Println("file content: ", string(content))
 			res := response.New(
 				response.StatusOk,
-				response.NewBody(encodedContent, "application/octet-stream"))
+				response.NewBody(string(content), "application/octet-stream"))
 			_, err = conn.Write(response.Encode(res))
 			return err
 		}
