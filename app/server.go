@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/config"
+	"github.com/codecrafters-io/http-server-starter-go/app/filesystem"
 	"github.com/codecrafters-io/http-server-starter-go/app/request"
 	"github.com/codecrafters-io/http-server-starter-go/app/response"
 )
@@ -45,23 +45,28 @@ func handleConnection(conn net.Conn, cfg config.Config) error {
 	case "files":
 		{
 			fileName := splitPath[2]
-			filePath := path.Join(cfg.FilesDirectory, fileName)
-			if !fileExists(filePath) {
-				res := response.NewText(response.StatusNotFound, "")
+			if req.Method == "GET" {
+				content, err := filesystem.ReadFile(cfg, fileName)
+				if err != nil {
+					res := response.NewText(response.StatusNotFound, "")
+					_, err = conn.Write(response.Encode(res))
+					return err
+				}
+				res := response.New(
+					response.StatusOk,
+					response.NewBody(string(content), "application/octet-stream"))
+				_, err = conn.Write(response.Encode(res))
+				return err
+			} else {
+				if err = filesystem.WriteToFile(cfg, req.Body, fileName); err != nil {
+					res := response.NewText(response.StatusNotFound, "")
+					_, err := conn.Write(response.Encode(res))
+					return err
+				}
+				res := response.NewText(response.StatusCreated, "")
 				_, err := conn.Write(response.Encode(res))
 				return err
 			}
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				res := response.NewText(response.StatusNotFound, "")
-				_, err := conn.Write(response.Encode(res))
-				return err
-			}
-			res := response.New(
-				response.StatusOk,
-				response.NewBody(string(content), "application/octet-stream"))
-			_, err = conn.Write(response.Encode(res))
-			return err
 		}
 	case "user-agent":
 		{
@@ -88,9 +93,4 @@ func handleConnection(conn net.Conn, cfg config.Config) error {
 func exitWithMessage(message ...any) {
 	fmt.Println(message...)
 	os.Exit(1)
-}
-
-func fileExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	return !os.IsNotExist(err)
 }
