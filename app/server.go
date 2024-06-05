@@ -84,7 +84,7 @@ func handle(r *router.Router, conn net.Conn, req request.Request, cfg config.Con
 	defer conn.Close()
 	res := r.Handle(req, cfg)
 	var encoded []byte
-	if encoding, ok := req.Headers["accept-encoding"]; ok && isEncodingValid(encoding) {
+	if encoding, ok := hasValidEncodingInHeaders(req); ok {
 		encoded = response.EncodeWith(*res, encoding)
 	} else {
 		encoded = response.Encode(*res)
@@ -92,8 +92,18 @@ func handle(r *router.Router, conn net.Conn, req request.Request, cfg config.Con
 	conn.Write(encoded)
 }
 
-func isEncodingValid(encoding string) bool {
-	return strings.ToLower(encoding) == "gzip"
+func hasValidEncodingInHeaders(req request.Request) (string, bool) {
+	encodings, ok := req.Headers["accept-encoding"]
+	if !ok {
+		return "", false
+	}
+	for _, encoding := range strings.Split(encodings, ",") {
+		trimmed := strings.Trim(encoding, " ")
+		if trimmed == "gzip" {
+			return trimmed, true
+		}
+	}
+	return "", false
 }
 
 func exitWithMessage(message ...any) {
