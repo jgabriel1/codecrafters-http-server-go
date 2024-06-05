@@ -1,8 +1,9 @@
 package response
 
 import (
-	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEncodesOkResponseCorrectly(t *testing.T) {
@@ -11,9 +12,7 @@ func TestEncodesOkResponseCorrectly(t *testing.T) {
 	expected := []byte(
 		"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 3\r\n\r\nfoo",
 	)
-	if !bytes.Equal(encoded, expected) {
-		t.Error("does not encode correctly")
-	}
+	assert.EqualValues(t, expected, encoded, "does not encode correctly")
 }
 
 func TestEncodesNotFoundResponseCorrectly(t *testing.T) {
@@ -22,7 +21,14 @@ func TestEncodesNotFoundResponseCorrectly(t *testing.T) {
 	expected := []byte(
 		"HTTP/1.1 404 Not Found\r\n\r\n",
 	)
-	if !bytes.Equal(encoded, expected) {
-		t.Error("does not encode correctly")
-	}
+	assert.EqualValues(t, expected, encoded, "does not encode correctly")
+}
+
+func TestAddsEncodingHeader(t *testing.T) {
+	res := NewText(StatusOk, "foo")
+	encoded := EncodeWith(res, "gzip")
+	expected := []byte(
+		"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 3\r\nContent-Encoding: gzip\r\n\r\nfoo",
+	)
+	assert.EqualValues(t, expected, encoded, "does not add encoding header")
 }

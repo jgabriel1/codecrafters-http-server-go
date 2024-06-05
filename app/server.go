@@ -83,7 +83,17 @@ func buildRouter() *router.Router {
 func handle(r *router.Router, conn net.Conn, req request.Request, cfg config.Config) {
 	defer conn.Close()
 	res := r.Handle(req, cfg)
-	conn.Write(response.Encode(*res))
+	var encoded []byte
+	if encoding, ok := req.Headers["accept-encoding"]; ok && isEncodingValid(encoding) {
+		encoded = response.EncodeWith(*res, encoding)
+	} else {
+		encoded = response.Encode(*res)
+	}
+	conn.Write(encoded)
+}
+
+func isEncodingValid(encoding string) bool {
+	return strings.ToLower(encoding) == "gzip"
 }
 
 func exitWithMessage(message ...any) {

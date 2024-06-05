@@ -25,7 +25,7 @@ func NewText(status Status, text string) Response {
 	}
 }
 
-func Encode(res Response) []byte {
+func buildHeaders(res Response) []string {
 	content := []string{}
 	content = append(content, res.status.ToEncoded())
 	if res.body.ContentLength > 0 {
@@ -34,8 +34,23 @@ func Encode(res Response) []byte {
 			fmt.Sprintf("Content-Length: %d", res.body.ContentLength),
 		)
 	}
+	return content
+}
+
+func Encode(res Response) []byte {
+	content := buildHeaders(res)
 	content = append(content,
-		"", // empty string to signal the end of the headers
+		"", // empty line to signal the end of the headers
+		res.body.Content,
+	)
+	return []byte(strings.Join(content, "\r\n"))
+}
+
+func EncodeWith(res Response, encoding string) []byte {
+	content := buildHeaders(res)
+	content = append(content, fmt.Sprintf("Content-Encoding: %s", encoding))
+	content = append(content,
+		"", // empty line to signal the end of the headers
 		res.body.Content,
 	)
 	return []byte(strings.Join(content, "\r\n"))
