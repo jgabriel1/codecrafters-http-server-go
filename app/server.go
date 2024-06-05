@@ -10,6 +10,7 @@ import (
 	"github.com/codecrafters-io/http-server-starter-go/app/filesystem"
 	"github.com/codecrafters-io/http-server-starter-go/app/request"
 	"github.com/codecrafters-io/http-server-starter-go/app/response"
+	"github.com/codecrafters-io/http-server-starter-go/app/router"
 )
 
 func main() {
@@ -18,76 +19,71 @@ func main() {
 	if err != nil {
 		exitWithMessage("Failed to bind to port 4221")
 	}
+	appRouter := buildRouter()
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			continue
 		}
-		go handleConnection(conn, cfg)
+		req, err := request.FromReader(conn)
+		if err != nil {
+			conn.Write(response.Encode(*response.DefaultInternalServerError()))
+			conn.Close()
+			continue
+		}
+		go handle(appRouter, conn, *req, cfg)
 	}
 }
 
-func handleConnection(conn net.Conn, cfg config.Config) error {
-	defer conn.Close()
-	req, err := request.FromReader(conn)
-	if err != nil {
-		exitWithMessage("Error reading message: ", err.Error())
-	}
-	splitPath := strings.Split(req.Path, "/")
-	switch splitPath[1] {
-	case "":
-		{
+func buildRouter() *router.Router {
+	r := router.New()
+	r.AddRoute("/", "GET",
+		func(req request.Request, cfg config.Config) *response.Response {
 			res := response.NewText(response.StatusOk, "")
-			_, err := conn.Write(response.Encode(res))
-			return err
-		}
-	case "files":
-		{
-			fileName := splitPath[2]
-			if req.Method == "GET" {
-				content, err := filesystem.ReadFile(cfg, fileName)
-				if err != nil {
-					res := response.NewText(response.StatusNotFound, "")
-					_, err = conn.Write(response.Encode(res))
-					return err
-				}
-				res := response.New(
-					response.StatusOk,
-					response.NewBody(string(content), "application/octet-stream"))
-				_, err = conn.Write(response.Encode(res))
-				return err
-			} else {
-				if err = filesystem.WriteToFile(cfg, req.Body, fileName); err != nil {
-					res := response.NewText(response.StatusNotFound, "")
-					_, err := conn.Write(response.Encode(res))
-					return err
-				}
-				res := response.NewText(response.StatusCreated, "")
-				_, err := conn.Write(response.Encode(res))
-				return err
+			return &res
+		})
+	r.AddRoute("/files/:filename", "GET",
+		func(req request.Request, cfg config.Config) *response.Response {
+			fileName := strings.Split(req.Path, "/")[2]
+			content, err := filesystem.ReadFile(cfg, fileName)
+			if err != nil {
+				res := response.NewText(response.StatusNotFound, "")
+				return &res
 			}
-		}
-	case "user-agent":
-		{
+			res := response.New(
+				response.StatusOk,
+				response.NewBody(string(content), "application/octet-stream"))
+			return &res
+		})
+	r.AddRoute("/files/:filename", "POST",
+		func(req request.Request, cfg config.Config) *response.Response {
+			fileName := strings.Split(req.Path, "/")[2]
+			if err := filesystem.WriteToFile(cfg, req.Body, fileName); err != nil {
+				res := response.NewText(response.StatusNotFound, "")
+				return &res
+			}
+			res := response.NewText(response.StatusCreated, "")
+			return &res
+		})
+	r.AddRoute("/user-agent", "GET",
+		func(req request.Request, cfg config.Config) *response.Response {
 			res := response.NewText(response.StatusOk, req.Headers["user-agent"])
-			_, err := conn.Write(response.Encode(res))
-			return err
-		}
-	case "echo":
-		{
-			message := splitPath[2]
+			return &res
+		})
+	r.AddRoute("/echo/:message", "GET",
+		func(req request.Request, cfg config.Config) *response.Response {
+			message := strings.Split(req.Path, "/")[2]
 			res := response.NewText(response.StatusOk, message)
-			_, err := conn.Write(response.Encode(res))
-			return err
-		}
-	default:
-		{
-			res := response.NewText(response.StatusNotFound, "")
-			_, err := conn.Write(response.Encode(res))
-			return err
-		}
-	}
+			return &res
+		})
+	return r
+}
+
+func handle(r *router.Router, conn net.Conn, req request.Request, cfg config.Config) {
+	defer conn.Close()
+	res := r.Handle(req, cfg)
+	conn.Write(response.Encode(*res))
 }
 
 func exitWithMessage(message ...any) {
