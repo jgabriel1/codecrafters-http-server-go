@@ -25,33 +25,25 @@ func NewText(status Status, text string) Response {
 	}
 }
 
-func buildHeaders(res Response) []string {
-	content := []string{}
-	content = append(content, res.status.ToEncoded())
-	if res.body.ContentLength > 0 {
-		content = append(content,
-			fmt.Sprintf("Content-Type: %s", res.body.ContentType),
-			fmt.Sprintf("Content-Length: %d", res.body.ContentLength),
-		)
-	}
-	return content
-}
-
 func Encode(res Response) []byte {
 	content := buildHeaders(res)
 	content = append(content,
 		"", // empty line to signal the end of the headers
-		res.body.Content,
-	)
+		res.body.Content)
 	return []byte(strings.Join(content, "\r\n"))
 }
 
-func EncodeWith(res Response, encoding string) []byte {
-	content := buildHeaders(res)
-	content = append(content, fmt.Sprintf("Content-Encoding: %s", encoding))
-	content = append(content,
-		"", // empty line to signal the end of the headers
-		res.body.Content,
-	)
-	return []byte(strings.Join(content, "\r\n"))
+func buildHeaders(res Response) []string {
+	content := []string{}
+	content = append(content, res.status.ToEncoded())
+	if res.body.ContentEncoding != "" {
+		content = append(content,
+			fmt.Sprintf("Content-Encoding: %s", res.body.ContentEncoding))
+	}
+	if res.body.ContentLength > 0 {
+		content = append(content,
+			fmt.Sprintf("Content-Type: %s", res.body.ContentType),
+			fmt.Sprintf("Content-Length: %d", res.body.ContentLength))
+	}
+	return content
 }

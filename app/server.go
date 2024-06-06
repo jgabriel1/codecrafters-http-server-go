@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/config"
+	"github.com/codecrafters-io/http-server-starter-go/app/encoding"
 	"github.com/codecrafters-io/http-server-starter-go/app/filesystem"
 	"github.com/codecrafters-io/http-server-starter-go/app/request"
 	"github.com/codecrafters-io/http-server-starter-go/app/response"
@@ -74,6 +76,17 @@ func buildRouter() *router.Router {
 	r.AddRoute("/echo/:message", "GET",
 		func(req request.Request, cfg config.Config) *response.Response {
 			message := strings.Split(req.Path, "/")[2]
+			if encodings, ok := req.Headers["accept-encoding"]; ok {
+				encodingsList := regexp.MustCompile(`\s*,\s*`).Split(encodings, -1)
+				encoder := encoding.FindValidEncoder(encodingsList)
+				if encoder != nil {
+					body, err := response.NewEncodedBody(message, "text/plain", *encoder)
+					if err == nil {
+						res := response.New(response.StatusOk, body)
+						return &res
+					}
+				}
+			}
 			res := response.NewText(response.StatusOk, message)
 			return &res
 		})
@@ -83,27 +96,7 @@ func buildRouter() *router.Router {
 func handle(r *router.Router, conn net.Conn, req request.Request, cfg config.Config) {
 	defer conn.Close()
 	res := r.Handle(req, cfg)
-	var encoded []byte
-	if encoding, ok := hasValidEncodingInHeaders(req); ok {
-		encoded = response.EncodeWith(*res, encoding)
-	} else {
-		encoded = response.Encode(*res)
-	}
-	conn.Write(encoded)
-}
-
-func hasValidEncodingInHeaders(req request.Request) (string, bool) {
-	encodings, ok := req.Headers["accept-encoding"]
-	if !ok {
-		return "", false
-	}
-	for _, encoding := range strings.Split(encodings, ",") {
-		trimmed := strings.Trim(encoding, " ")
-		if trimmed == "gzip" {
-			return trimmed, true
-		}
-	}
-	return "", false
+	conn.Write(response.Encode(*res))
 }
 
 func exitWithMessage(message ...any) {
